@@ -1,32 +1,31 @@
-# What we will implement
+# Ce que nous allons implémenter
 
-Before starting to build an OS, let's quickly get an overview of the features we will implement.
+Avant de commencer à construire un OS, passons rapidement en revue les fonctionnalités que nous allons implémenter.
 
-## Features in 1K LoC OS
+## Fonctionnalités dans l'OS en 1K LoC
 
-In this book, we will implement the following major features:
+Dans ce livre, nous allons implémenter les fonctionnalités majeures suivantes :
 
-- **Multitasking**: Switch between processes to allow multiple applications to share the CPU.
-- **Exception handler**: Handle events requiring OS intervention, such as illegal instructions.
-- **Paging**: Provide an isolated memory address space for each application.
-- **System calls**: Allow applications to call kernel features.
-- **Device drivers**: Abstract hardware functionalities, such as disk read/write.
-- **File system**: Manage files on disk.
-- **Command-line shell**: User interface for humans.
+- **Multitâche** : Permet de basculer entre plusieurs processus afin que plusieurs applications puissent partager le CPU.
+- **Gestionnaire d'exceptions** : Gère les événements nécessitant une intervention de l'OS, comme les instructions illégales.
+- **Pagination** : Fournit un espace mémoire isolé pour chaque application.
+- **Appels système** : Permet aux applications d'accéder aux fonctionnalités du noyau.
+- **Pilotes de périphériques** : Abstrait les fonctionnalités matérielles, comme la lecture/écriture sur disque.
+- **Système de fichiers** : Gère les fichiers stockés sur le disque.
+- **Shell en ligne de commande** : Interface utilisateur permettant aux humains d'interagir avec le système.
 
-## Features not implemented
+## Fonctionnalités non implémentées
 
-The following major features are not implemented in this book:
+Les fonctionnalités majeures suivantes ne sont pas implémentées dans ce livre :
 
-- **Interrupt handling**: Instead, we will use a polling method (periodically check for new data on devices), also known as busy waiting.
-- **Timer processing**: Preemptive multitasking is not implemented. We'll use cooperative multitasking, where each process voluntarily yields the CPU.
-- **Inter-process communication**: Features such as pipe, UNIX domain socket, and shared memory are not implemented.
-- **Multi-processor support**: Only single processor is supported.
+- **Gestion des interruptions** : À la place, nous utiliserons une méthode de scrutation (vérification périodique des nouvelles données sur les périphériques), également connue sous le nom de busy waiting.
+- **Gestion des timers** : Le multitâche préemptif n'est pas implémenté. Nous utiliserons un multitâche coopératif, où chaque processus cède volontairement le CPU.
+- **Communication inter-processus** : Des fonctionnalités comme les pipes, les sockets UNIX et la mémoire partagée ne sont pas implémentées.
+- **Support multi-processeur** : Seul un processeur unique est pris en charge.
 
-## Source code structure
+## Structure du code source
 
-We'll build from scratch incrementally, and the final file structure will look like this:
-
+Nous allons construire notre OS progressivement à partir de zéro, et la structure finale des fichiers ressemblera à ceci :
 ```
 ├── disk/     - File system contents
 ├── common.c  - Kernel/user common library: printf, memset, ...
@@ -43,4 +42,5 @@ We'll build from scratch incrementally, and the final file structure will look l
 
 > [!TIP]
 >
-> In this book, "user land" is sometimes abbreviated as "user". Consider it as "applications", and do not confuse it with "user account"!
+> Dans ce livre, "espace utilisateur" est parfois abrégé en "utilisateur". Considérez cela comme "applications" et ne le confondez pas avec un "compte utilisateur" !
+
