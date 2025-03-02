@@ -1,243 +1,238 @@
-# RISC-V 101
+# Découverte RISC-V
 
-Just like web browsers hide the differences between Windows/macOS/Linux, operating systems hide the differences between CPUs. In other words, operating system is a program which controls the CPU to provide an abstraction layer for applications.
+Tout comme les navigateurs web masquent les différences entre Windows/macOS/Linux, les systèmes d'exploitation masquent les différences entre les processeurs. En d'autres termes, un système d'exploitation est un programme qui contrôle le processeur afin de fournir une couche d'abstraction pour les applications.
 
-In this book, I chose RISC-V as the target CPU because:
+Dans ce livre, j'ai choisi RISC-V comme architecture cible car :
 
-- [The specification](https://riscv.org/technical/specifications/) is simple and suitable for beginners.
-- It's a trending ISA (Instruction Set Architecture) in recent years, along with x86 and Arm.
-- The design decisions are well-documented throughout the spec and they are fun to read.
+- [La spécification](https://riscv.org/technical/specifications/) est simple et adaptée aux débutants.
+- C'est une architecture de jeu d'instructions (ISA) en plein essor ces dernières années, aux côtés de x86 et Arm.
+- Les choix de conception sont bien documentés dans la spécification et sont intéressants à lire.
 
-We will write an OS for **32-bit** RISC-V. Of course you can write for 64-bit RISC-V with only a few changes. However, the wider bit width makes it slightly more complex, and the longer addresses can be tedious to read.
+Nous allons écrire un système d'exploitation pour **RISC-V 32 bits**. Bien sûr, il est possible d'écrire pour RISC-V 64 bits avec seulement quelques modifications. Cependant, une largeur de bits plus importante rend les choses légèrement plus complexes, et les adresses plus longues sont fastidieuses à lire.
 
-## QEMU virt machine
+## Machine virtuelle QEMU
 
-Computers are composed of various devices: CPU, memory, network cards, hard disks, and so on. For example, although iPhones and Raspberry Pis use Arm CPUs, it's natural to consider them as different computers.
+Les ordinateurs sont composés de divers périphériques : processeur, mémoire, cartes réseau, disques durs, etc. Par exemple, bien que les iPhones et les Raspberry Pis utilisent des processeurs Arm, il est naturel de les considérer comme des ordinateurs différents.
 
-In this book, we support the QEMU `virt` machine ([documentation](https://www.qemu.org/docs/master/system/riscv/virt.html)) because:
+Dans ce livre, nous utilisons la machine virtuelle `virt` de QEMU ([documentation](https://www.qemu.org/docs/master/system/riscv/virt.html)) car :
 
-- Even though it does not exist in the real world, it's simple and very similar to real devices.
-- You can emulate it on QEMU for free. You don't need to buy a physical hardware.
-- When you encounter debugging issues, you can read QEMU's source code, or attach a debugger to the QEMU process to investigate what's wrong.
+- Même si elle n'existe pas dans le monde réel, elle est simple et très proche des périphériques réels.
+- Vous pouvez l'émuler sur QEMU gratuitement, sans avoir besoin d'acheter du matériel physique.
+- En cas de problèmes de débogage, vous pouvez lire le code source de QEMU ou attacher un débogueur au processus QEMU pour comprendre ce qui ne fonctionne pas.
 
-## RISC-V assembly 101
+## Introduction à l'assembleur RISC-V
 
-RISC-V, or RISC-V ISA (Instruction Set Architecture), defines the instructions that the CPU can execute. It's similar to APIs or programming language specifications for programmers. When you write a C program, the compiler translates it into RISC-V assembly. Unfortunately, you need to write some assembly code to write an OS. But don't worry! Assembly is not as difficult as you might think.
+RISC-V, ou ISA RISC-V (Instruction Set Architecture), définit les instructions que le processeur peut exécuter. C'est similaire aux API ou aux spécifications des langages de programmation pour les développeurs. Lorsque vous écrivez un programme en C, le compilateur le traduit en assembleur RISC-V. Malheureusement, pour écrire un système d'exploitation, il est nécessaire d'écrire un peu de code assembleur. Mais ne vous inquiétez pas ! L'assembleur n'est pas aussi difficile que vous pourriez le penser.
 
-> [!TIP]
+> [!ASTUCE]
 >
-> **Try Compiler Explorer!**
+> **Essayez Compiler Explorer !**
 >
-> A useful tool for learning assembly is [Compiler Explorer](https://godbolt.org/), an online compiler. As you type C code, it shows the corresponding assembly code.
+> Un outil utile pour apprendre l'assembleur est [Compiler Explorer](https://godbolt.org/), un compilateur en ligne. En tapant du code C, il affiche le code assembleur correspondant.
 >
-> By default, Compiler Explorer uses x86-64 CPU assembly. Specify `RISC-V rv32gc clang (trunk)` in the right pane to output 32-bit RISC-V assembly.
+> Par défaut, Compiler Explorer utilise l'assembleur x86-64. Spécifiez `RISC-V rv32gc clang (trunk)` dans le panneau de droite pour obtenir l'assembleur RISC-V 32 bits.
 >
-> Also, it would be interesting to specify optimization options like `-O0` (optimization off) or `-O2` (optimization level 2) in the compiler options and see how the assembly changes.
+> Il est également intéressant d'expérimenter avec des options d'optimisation comme `-O0` (optimisation désactivée) ou `-O2` (optimisation de niveau 2) et d'observer les différences dans l'assembleur.
 
-### Assembly language basics
+### Bases du langage assembleur
 
-Assembly language is a (mostly) direct representation of machine code. Let's take a look at a simple example:
+Le langage assembleur est une représentation (presque) directe du code machine. Jetons un coup d'œil à un exemple simple :
 
 ```asm
 addi a0, a1, 123
 ```
 
-Typically, each line of assembly code corresponds to a single instruction. The first column (`addi`) is the instruction name, also known as the *opcode*. The following columns (`a0, a1, 123`) are the *operands*, the arguments for the instruction. In this case, the `addi` instruction adds the value `123` to the value in register `a1`, and stores the result in register `a0`.
+En général, chaque ligne de code assembleur correspond à une seule instruction. La première colonne (`addi`) est le nom de l'instruction, également appelé *opcode*. Les colonnes suivantes (`a0, a1, 123`) sont les *opérandes*, les arguments de l'instruction. Dans ce cas, l'instruction `addi` ajoute la valeur `123` à la valeur du registre `a1` et stocke le résultat dans le registre `a0`.
 
-### Registers
+### Registres
 
-Registers are like temporary variables in the CPU, and they are way faster than memory. CPU reads data from memory into registers, does arithmetic operations on registers, and writes the results back to memory/registers.
+Les registres sont comme des variables temporaires dans le processeur, et ils sont beaucoup plus rapides que la mémoire. Le processeur lit les données de la mémoire dans les registres, effectue des opérations arithmétiques sur ces registres, puis écrit les résultats en mémoire ou dans d'autres registres.
 
-Here are some common registers in RISC-V:
+Voici quelques registres courants en RISC-V :
 
-| Register | ABI Name (alias) | Description |
+| Registre | Nom ABI (alias) | Description |
 |---| -------- | ----------- |
-| `pc` | `pc`       | Program counter (where the next instruction is) |
-| `x0` |`zero`     | Hardwired zero (always reads as zero) |
-| `x1` |`ra`         | Return address |
-| `x2` |`sp`         | Stack pointer |
-| `x5` - `x7` | `t0` - `t2` | Temporary registers |
-| `x8` | `fp`      | Stack frame pointer |
-| `x10` - `x11` | `a0` - `a1`  | Function arguments/return values |
-| `x12` - `x17` | `a2` - `a7`  | Function arguments |
-| `x18` - `x27` | `s0` - `s11` | Temporary registers saved across calls |
-| `x28` - `x31` | `t3` - `t6` | Temporary registers |
+| `pc` | `pc`       | Compteur de programme (adresse de la prochaine instruction) |
+| `x0` |`zero`     | Valeur constante zéro (toujours lu comme zéro) |
+| `x1` |`ra`         | Adresse de retour |
+| `x2` |`sp`         | Pointeur de pile |
+| `x5` - `x7` | `t0` - `t2` | Registres temporaires |
+| `x8` | `fp`      | Pointeur de cadre de pile |
+| `x10` - `x11` | `a0` - `a1`  | Arguments de fonction/valeurs de retour |
+| `x12` - `x17` | `a2` - `a7`  | Arguments de fonction |
+| `x18` - `x27` | `s0` - `s11` | Registres temporaires sauvegardés entre appels |
+| `x28` - `x31` | `t3` - `t6` | Registres temporaires |
 
-> [!TIP]
+> [!ASTUCE]
 >
-> **Calling convention:**
+> **Convention d'appel :**
 >
-> Generally, you may use CPU registers as you like, but for the sake of interoperability with other software, how registers are used is well defined - this is called the *calling convention*.
+> En général, vous pouvez utiliser les registres du processeur comme bon vous semble, mais pour assurer l'interopérabilité avec d'autres logiciels, l'utilisation des registres est bien définie - c'est ce qu'on appelle la *convention d'appel*.
 >
-> For example, `x10` - `x11` registers are used for function arguments and return values. For human readability, they are given aliases like `a0` - `a1` in the ABI. Check [the spec](https://riscv.org/wp-content/uploads/2015/01/riscv-calling.pdf) for more details.
+> Par exemple, les registres `x10` - `x11` sont utilisés pour les arguments et les valeurs de retour des fonctions. Pour une meilleure lisibilité, ils sont renommés `a0` - `a1` dans l'ABI. Consultez [la spécification](https://riscv.org/wp-content/uploads/2015/01/riscv-calling.pdf) pour plus de détails.
 
-### Memory access
+### Accès mémoire
 
-Registers are really fast, but they are limited in number. Most of data are stored in memory, and programs reads/writes data from/to memory using the `lw` (load word) and `sw` (store word) instructions:
+Les registres sont très rapides mais limités en nombre. La plupart des données sont stockées en mémoire, et les programmes lisent/écrivent ces données avec les instructions `lw` (load word) et `sw` (store word) :
 
 ```asm
-lw a0, (a1)  // Read a word (32-bits) from address in a1
-             // and store it in a0. In C, this would be: a0 = *a1;
+lw a0, (a1)  // Lit un mot (32 bits) à l'adresse contenue dans a1
+             // et le stocke dans a0. En C : a0 = *a1;
 ```
 
 ```asm
-sw a0, (a1)  // Store a word in a0 to the address in a1.
-             // In C, this would be: *a1 = a0;
+sw a0, (a1)  // Stocke un mot de a0 à l'adresse contenue dans a1.
+             // En C : *a1 = a0;
 ```
 
-You can consider `(...)` as a pointer dereference in C language. In this case, `a1` is a pointer to a 32-bits-wide value.
+### Instructions de branchement
 
-### Branch instructions
-
-Branch instructions change the control flow of the program. They are used to implement `if`, `for`, and `while` statements, 
-
+Les instructions de branchement modifient le flux de contrôle du programme. Elles sont utilisées pour implémenter `if`, `for` et `while` :
 
 ```asm
-    bnez    a0, <label>   // Go to <label> if a0 is not zero
-    // If a0 is zero, continue here
+bnez a0, <label>   // Aller à <label> si a0 n'est pas nul
+// Si a0 est nul, continuer ici
 
 <label>:
-    // If a0 is not zero, continue here
+// Si a0 n'est pas nul, continuer ici
 ```
 
-`bnez` stands for "branch if not equal to zero". Other common branch instructions include `beq` (branch if equal) and `blt` (branch if less than). They are similar to `goto` in C, but with conditions.
+`bnez` signifie "branch if not equal to zero". D'autres instructions courantes incluent `beq` (branch if equal) et `blt` (branch if less than). Elles sont similaires à `goto` en C, mais avec des conditions.
 
-### Function calls
+## Appels de fonction
 
-`jal` (jump and link) and `ret` (return) instructions are used for calling functions and returning from them:
+Les instructions `jal` (jump and link) et `ret` (return) sont utilisées pour appeler des fonctions et en revenir :
 
 ```asm
-    li  a0, 123      // Load 123 to a0 register (function argument)
-    jal ra, <label>  // Jump to <label> and store the return address
-                     // in the ra register.
+    li  a0, 123      // Charge 123 dans le registre a0 (argument de la fonction)
+    jal ra, <label>  // Saute à <label> et stocke l'adresse de retour
+                     // dans le registre ra.
 
-    // After the function call, continue here...
+    // Après l'appel de la fonction, le programme continue ici...
 
 // int func(int a) {
 //   a += 1;
 //   return a;
 // }
 <label>:
-    addi a0, a0, 1    // Increment a0 (first argument) by 1
+    addi a0, a0, 1    // Incrémente a0 (premier argument) de 1
 
-    ret               // Return to the address stored in ra.
-                      // a0 register has the return value.
+    ret               // Retourne à l'adresse stockée dans ra.
+                      // Le registre a0 contient la valeur de retour.
 ```
 
-Function arguments are passed in `a0` - `a7` registers, and the return value is stored in `a0` register, as per the calling convention.
+Les arguments des fonctions sont passés dans les registres `a0` - `a7`, et la valeur de retour est stockée dans le registre `a0`, conformément à la convention d'appel.
 
-### Stack
+## Pile (Stack)
 
-Stack is a Last-In-First-Out (LIFO) memory space used for function calls and local variables. It grows downwards, and the stack pointer `sp` points to the top of the stack.
+La pile est une zone mémoire de type Dernier Entré, Premier Sorti (LIFO) utilisée pour les appels de fonction et les variables locales. Elle croît vers les adresses inférieures, et le pointeur de pile `sp` indique le sommet de la pile.
 
-To save a value into the stack, decrement the stack pointer and store the value (aka. *push* operation):
+Pour sauvegarder une valeur dans la pile, on décrémente le pointeur de pile et on stocke la valeur (opération *push*) :
 
 ```asm
-    addi sp, sp, -4  // Move the stack pointer down by 4 bytes
-                     // (i.e. stack allocation).
+    addi sp, sp, -4  // Déplace le pointeur de pile vers le bas de 4 octets
+                     // (allocation sur la pile).
 
-    sw   a0, (sp)    // Store a0 to the stack
+    sw   a0, (sp)    // Stocke a0 dans la pile
 ```
 
-To load a value from the stack, load the value and increment the stack pointer (aka. *pop* operation):
+Pour charger une valeur depuis la pile, on la charge puis on incrémente le pointeur de pile (opération *pop*) :
 
 ```asm
-    lw   a0, (sp)    // Load a0 from the stack
-    addi sp, sp, 4   // Move the stack pointer up by 4 bytes
-                     // (i.e. stack deallocation).
+    lw   a0, (sp)    // Charge a0 depuis la pile
+    addi sp, sp, 4   // Déplace le pointeur de pile vers le haut de 4 octets
+                     // (désallocation de la pile).
 ```
 
-> [!TIP]
+> [!ASTUCE]
 >
-> In C, stack operations are generated by the compiler, so you don't have to write them manually.
+> En C, les opérations sur la pile sont générées automatiquement par le compilateur, donc vous n'avez pas à les écrire manuellement.
 
-## CPU modes
 
-CPU has multiple modes, each with different privileges. In RISC-V, there are three modes:
+### Modes du processeur
 
-| Mode   | Overview                            |
+Le processeur dispose de plusieurs modes, chacun avec différents niveaux de privilège. En RISC-V, il y a trois modes :
+
+| Mode   | Description |
 | ------ | ----------------------------------- |
-| M-mode | Mode in which OpenSBI (i.e. BIOS) operates.     |
-| S-mode | Mode in which the kernel operates, aka. "kernel mode". |
-| U-mode | Mode in which applications operate, aka. "user mode".  |
+| M-mode | Mode où fonctionne OpenSBI (BIOS). |
+| S-mode | Mode dans lequel fonctionne le noyau, aussi appelé "mode noyau". |
+| U-mode | Mode dans lequel fonctionnent les applications, aussi appelé "mode utilisateur". |
 
-## Privileged instructions
+### Instructions privilégiées
 
-Among CPU instructions, there are types called privileged instructions that applications (user mode) cannot execute. In this book, we use the following privileged instructions:
+Certaines instructions sont dites privilégiées et ne peuvent pas être exécutées en mode utilisateur. Voici celles utilisées dans ce livre :
 
-| Opcode and operands | Overview                                                                   | Pseudocode                       |
-| ------------------------ | -------------------------------------------------------------------------- | -------------------------------- |
-| `csrr rd, csr`           | Read from CSR                                                              | `rd = csr;`                      |
-| `csrw csr, rs`           | Write to CSR                                                               | `csr = rs;`                      |
-| `csrrw rd, csr, rs`      | Read from and write to CSR at once                                         | `tmp = csr; csr = rs; rd = tmp;` |
-| `sret`                   | Return from trap handler (restoring program counter, operation mode, etc.) |                                  |
-| `sfence.vma`             | Clear Translation Lookaside Buffer (TLB)                                   |                                  |
+| Opcode et opérandes | Description |
+| ------------------------ | -------------------------------------- |
+| `csrr rd, csr`           | Lit depuis un CSR |
+| `csrw csr, rs`           | Écrit dans un CSR |
+| `csrrw rd, csr, rs`      | Lit et écrit simultanément un CSR |
+| `sret`                   | Retourne du gestionnaire d'exceptions |
+| `sfence.vma`             | Vide le cache de traduction d'adresses |
 
-**CSR (Control and Status Register)** is a register that stores CPU settings. The list of CSRs can be found in [RISC-V Privileged Specification](https://riscv.org/specifications/privileged-isa/).
+Les CSR (Control and Status Registers) stockent les paramètres du processeur. La liste complète est disponible dans la [spécification privilégiée RISC-V](https://riscv.org/specifications/privileged-isa/).
 
-> [!TIP]
->
-> Some instructions like `sret` do some somewhat complex operations. To understand what actually happens, reading RISC-V emulator source code might be helpful. Particularly, [rvemu](https://github.com/d0iasm/rvemu) is written in a intuitive and easy-to-understand way (e.g. [sret implementation](https://github.com/d0iasm/rvemu/blob/f55eb5b376f22a73c0cf2630848c03f8d5c93922/src/cpu.rs#L3357-L3400)).
 
-## Inline assembly
+## Assembleur en ligne (Inline Assembly)
 
-In following chapters, you'll encounter special C language syntax like this:
+Dans les chapitres suivants, vous rencontrerez une syntaxe spécifique du langage C comme celle-ci :
 
 ```c
 uint32_t value;
 __asm__ __volatile__("csrr %0, sepc" : "=r"(value));
 ```
 
-This is *"inline assembly"*, a syntax for embedding assembly into C code. While you can write assembly in a separate file (`.S` extension), using inline assembly is generally preferred because:
+Ceci est de *l'assembleur en ligne*, une syntaxe permettant d'intégrer du code assembleur dans du code C. Bien que vous puissiez écrire l'assembleur dans un fichier séparé (extension `.S`), l'utilisation de l'assembleur en ligne est généralement préférée car :
 
-- You can use C variables within the assembly. Also, you can assign the results of assembly to C variables.
-- You can leave register allocation to the C compiler. That is, you don't have to manually write the preservation and restoration of registers to be modified in the assembly.
+- Vous pouvez utiliser des variables C dans l'assembleur et affecter les résultats de l'assembleur à des variables C.
+- Vous pouvez laisser le compilateur gérer l'allocation des registres, évitant ainsi d'avoir à écrire manuellement la sauvegarde et la restauration des registres modifiés.
 
-### How to write inline assembly
+### Comment écrire de l'assembleur en ligne
 
-Inline assembly is written in the following format:
+L'assembleur en ligne est écrit selon le format suivant :
 
 ```c
-__asm__ __volatile__("assembly" : output operands : input operands : clobbered registers);
+__asm__ __volatile__("assembly" : opérandes de sortie : opérandes d'entrée : registres modifiés);
 ```
 
-| Part               | Description                                                                 |
-| ------------------ | --------------------------------------------------------------------------- |
-| `__asm__`          | Indicates it's an inline assembly.                                           |
-| `__volatile__`     | Tell the compiler not to optimize the `"assembly"` code.                          |
-| `"assembly"`       | Assembly code written as a string literal.                                   |
-| output operands  | C variables to store the results of the assembly.                           |
-| input operands   | C expressions (e.g. `123`, `x`) to be used in the assembly.             |
-| clobbered registers | Registers whose contents are destroyed in the assembly. If forgotten, the C compiler won't preserve the contents of these registers and would cause a bug. |
+| Élément             | Description                                                      |
+| ------------------- | ---------------------------------------------------------------- |
+| `__asm__`           | Indique qu'il s'agit d'assembleur en ligne.                      |
+| `__volatile__`      | Informe le compilateur de ne pas optimiser le code `"assembly"`. |
+| `"assembly"`        | Code assembleur écrit sous forme de chaîne de caractères.        |
+| Opérandes de sortie | Variables C stockant les résultats de l'assembleur.              |
+| Opérandes d'entrée  | Expressions C (ex. `123`, `x`) utilisées dans l'assembleur.      |
+| Registres modifiés  | Registres dont le contenu est altéré par l'assembleur.           |
 
-Output and input operands are comma-separated, and each operand is written in the format `constraint (C expression)`. Constraints are used to specify the type of operand, and usually `=r` (register) for output operands, and `r` for input operands.
+Les opérandes de sortie et d'entrée sont séparés par des virgules et chaque opérande est écrit sous la forme `contrainte (expression C)`. Les contraintes définissent le type d'opérande, généralement `=r` (registre) pour la sortie et `r` pour l'entrée.
 
-Output and input operands can be accessed in the assembly using `%0`, `%1`, `%2`, etc., in order starting from the output operands.
+Les opérandes de sortie et d'entrée peuvent être référencés dans l'assembleur en utilisant `%0`, `%1`, `%2`, etc., en commençant par les opérandes de sortie.
 
-### Examples
+### Exemples
 
 ```c
 uint32_t value;
 __asm__ __volatile__("csrr %0, sepc" : "=r"(value));
 ```
 
-This reads the value of the `sepc` CSR using the `csrr` instruction, and assigns it to the `value` variable. `%0` corresponds to the `value` variable.
+Cette instruction lit la valeur du CSR `sepc` en utilisant l'instruction `csrr` et l'affecte à la variable `value`. `%0` correspond à `value`.
 
 ```c
 __asm__ __volatile__("csrw sscratch, %0" : : "r"(123));
 ```
 
-This writes `123` to the `sscratch` CSR, using the `csrw` instruction. `%0` corresponds to the register containing `123` (`r` constraint), and it would actually look like:
+Cette instruction écrit `123` dans le CSR `sscratch`, en utilisant l'instruction `csrw`. `%0` correspond au registre contenant `123` (`r` comme contrainte), et cela pourrait se traduire par :
 
 ```
-li    a0, 123        // Set 123 to a0 register
-csrw  sscratch, a0   // Write the value of a0 register to sscratch register
+li    a0, 123        // Charge 123 dans le registre a0
+csrw  sscratch, a0   // Écrit la valeur de a0 dans le registre sscratch
 ```
 
-Although only the `csrw` instruction is written in the inline assembly, the `li` instruction is automatically inserted by the compiler to satisfy the `"r"` constraint (value in a register). It's super convenient!
+Bien que seule l'instruction `csrw` soit écrite dans l'assembleur en ligne, l'instruction `li` est automatiquement insérée par le compilateur pour respecter la contrainte `"r"` (valeur dans un registre). C'est très pratique !
 
-> [!TIP]
+> [!ASTUCE]
 >
-> Inline assembly is a compiler-specific extension not included in the C language specification. You can check detailed usage in the [GCC documentation](https://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html). However, it takes time to understand because constraint syntax differs depending on CPU architecture, and it has many complex functionalities.
+> L'assembleur en ligne est une extension spécifique aux compilateurs et ne fait pas partie de la spécification du langage C. Vous pouvez consulter son utilisation détaillée dans la [documentation GCC](https://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html). Cependant, il peut être difficile à comprendre en raison de la syntaxe des contraintes qui varie selon l'architecture du processeur et des nombreuses fonctionnalités avancées.
 >
-> For beginners, I recommend to search for real-world examples. For instance, [HinaOS](https://github.com/nuta/microkernel-book/blob/52d66bd58cd95424f009e2df8bc1184f6ffd9395/kernel/riscv32/asm.h) and [xv6-riscv](https://github.com/mit-pdos/xv6-riscv/blob/riscv/kernel/riscv.h) are good references.
+> Pour les débutants, il est recommandé de chercher des exemples concrets. Par exemple, [HinaOS](https://github.com/nuta/microkernel-book/blob/52d66bd58cd95424f009e2df8bc1184f6ffd9395/kernel/riscv32/asm.h) et [xv6-riscv](https://github.com/mit-pdos/xv6-riscv/blob/riscv/kernel/riscv.h) sont de bonnes références.
