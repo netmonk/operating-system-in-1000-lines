@@ -4,13 +4,13 @@ title: Bien démarrer
 
 # Bien démarrer
 
-Le contenu de ce livre s'adresse à des gens familiers des systèmes d'exploitation Unix et assimilés comme macOS ou Linux (Ubuntu). Pour les utilisateurs des Windows, il faut installer Windows Subsystem for Linux (WSL2) et suivre les instructions associées à Ubuntu.
+Le contenu de ce livre s'adresse à des gens familiers des systèmes d'exploitation Unix et assimilés comme macOS ou Linux (Ubuntu). Pour les utilisateurs des Windows, installez Windows Subsystem for Linux (WSL2) et suivez les instructions associées à Ubuntu.
 
 ## Installation des outils de developement
 
 ### macOS 
 
-Installez [Homebrew](https://brew.sh) et executez cette command pour installer tous les outils requis:
+Installez [Homebrew](https://brew.sh) et exécutez cette command pour installer tous les outils requis:
 
 ```
 brew install llvm lld qemu
