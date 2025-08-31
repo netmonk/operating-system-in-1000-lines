@@ -32,7 +32,7 @@ Installez les paquets suivant avec apt:
 sudo apt update && sudo apt install -y clang llvm lld qemu-system-riscv32 curl
 ```
 
-Télechargez OpenSBI (l'équivalent du BIOS/UEFI pour PCs):
+Téléchargez OpenSBI (l'équivalent du BIOS/UEFI pour PCs):
 
 ```
 curl -LO https://github.com/qemu/qemu/raw/v8.0.4/pc-bios/opensbi-riscv32-generic-fw_dynamic.bin
@@ -61,7 +61,7 @@ Si vous utilisez un autre OS que ceux précédents, installez les outils suivant
 
 > [!ASTUCE]
 >
-> Pour vérifier si `clang` supporte l'architecture 32-bit RISC-V CPU, executez cette commande:
+> Pour vérifier si `clang` supporte l'architecture 32-bit RISC-V CPU, exécutez cette commande:
 >
 > ```
 > $ clang -print-targets | grep riscv32
@@ -72,7 +72,7 @@ Si vous utilisez un autre OS que ceux précédents, installez les outils suivant
 
 ## Initialiser un dépot GIT (optionel)
 
-Si vous utilisez un dépot `git`, configurer le fichier `.gitignore` ainsi: 
+Si vous utilisez un dépôt `git`, configurer le fichier `.gitignore` ainsi: 
 
 ```gitignore [.gitignore]
 /disk/*

@@ -1,20 +1,20 @@
 # Booting the Kernel
 
-When a computer is turned on, the CPU initializes itself and starts executing the OS. OS initializes the hardware and starts the applications. This process is called "booting".
+Lorsqu'un ordinateur démarre, le CPU s'initialise et lance le système d'exploitation. Celui-ci initalise le matérielle et démarre les applications. Tout ce processus se nomme "boot". 
 
-What happens before the OS starts? In PCs, BIOS (or UEFI in modern PCs) initializes the hardware, displays the splash screen, and loads the OS from the disk. In QEMU `virt` machine, OpenSBI is the equivalent of BIOS/UEFI.
+Que ce passe-t-il avant le démarage du système d'exploitation? Sur les PRs, le BIOS (ou l'EUFI dans le matériel récent) initialise le matériel, affiche l'écran d'accueil, et charge le système d'exploitation depuis le disque dur. Pour la machine `virt` de QEMU, OpenSBI est l'équivalent du BIOS/EUFI.
 
 ## Supervisor Binary Interface (SBI)
 
-The Supervisor Binary Interface (SBI) is an API for OS kernels, but defines what the firmware (OpenSBI) provides to an OS.
+Le Supervisor Binary Interface (SBI) est une API pour le noyau, et définit ce que le micrologiciel (firmware) fournit comme primitive au système d'exploitation.
 
-The SBI specification is [published on GitHub](https://github.com/riscv-non-isa/riscv-sbi-doc/releases). It defines useful features such as displaying characters on the debug console (e.g., serial port), reboot/shutdown, and timer settings.
+La spécification SBI est [publiée sur GitHub](https://github.com/riscv-non-isa/riscv-sbi-doc/releases). Un ensemble de fonctions utiles y sont définies, comme celle d'afficherdes caractères sur la console de debug (le port serie), le redémarrage/arrêt de la machine et la configuration des horloges. 
 
-A famous SBI implementation is [OpenSBI](https://github.com/riscv-software-src/opensbi). In QEMU, OpenSBI starts by default, performs hardware-specific initialization, and boots the kernel.
+Une implémentation populaire de SBI est [OpenSBI](https://github.com/riscv-software-src/opensbi). Dans QEMU, OpenSBI est le premier code à s'executer, pour initialiser le ma´ttériel et démarrer le noyau.
 
-## Let's boot OpenSBI
+## Démarrons OpenSBI
 
-First, let's see how OpenSBI starts. Create a shell script named `run.sh` as follows:
+Première étape, observons comment OpenSBI s'execute. Créez le script shel suivant nommé `run.sh`: 
 
 ```
 $ touch run.sh
@@ -32,24 +32,24 @@ QEMU=qemu-system-riscv32
 $QEMU -machine virt -bios default -nographic -serial mon:stdio --no-reboot
 ```
 
-QEMU takes various options to start the virtual machine. Here are the options used in the script:
+QEMU s'execute avec tout une panel d'options pour démarrer une machine virtuelle. Voici les options utilisées dans le script: 
 
-- `-machine virt`: Start a `virt` machine. You can check other supported machines with the `-machine '?'` option.
-- `-bios default`: Use the default firmware (OpenSBI in this case).
-- `-nographic`: Start QEMU without a GUI window.
-- `-serial mon:stdio`: Connect QEMU's standard input/output to the virtual machine's serial port. Specifying `mon:` allows switching to the QEMU monitor by pressing <kbd>Ctrl</kbd>+<kbd>A</kbd> then <kbd>C</kbd>.
-- `--no-reboot`: If the virtual machine crashes, stop the emulator without rebooting (useful for debugging).
+- `-machine virt`: Démarre une machine  `virt`. Pour connaitre les autres types de machines supportées, utilisez l'option `-machine '?'`.
+- `-bios default`: Spécifie l'utilisation du firmware par défaut (OpenSBI dans notre cas).
+- `-nographic`: Démarre QEMU sans interface graphique (en mode console). 
+- `-serial mon:stdio`: Connecte l'interface entrée/sortie de QEMU au port série de la machine virtuelle. L'option `mon:` permet le changement de mode et d'accèder à l'interface de contrôle de QEMU par la combinaison de touches:  <kbd>Ctrl</kbd>+<kbd>A</kbd> et  <kbd>C</kbd>.
+- `--no-reboot`: Lorsque la machine virtuelle échoue, permet d'arrêter l'émulateur QEMU, sans un redémarrage automatique de la machine (utile pour débugger).
 
-> [!TIP]
+> [!ASTUCES]
 >
-> In macOS, you can check the path to Homebrew's QEMU with the following command:
+> Pour macOS, Vérifiez le chemin d'accès à l'émulateur installé par Homebrew avec la commande suivante:
 >
 > ```
 > $ ls $(brew --prefix)/bin/qemu-system-riscv32
 > /opt/homebrew/bin/qemu-system-riscv32
 > ```
 
-Run the script and you will see the following banner:
+Executez le script et vous devrez obtenir l'affichage suivant: 
 
 ```
 $ ./run.sh
@@ -64,7 +64,7 @@ OpenSBI v1.2
         | |
         |_|
 
-Platform Name             : riscv-virtio,qemu
+    Platfo m Name             : riscv-virtio,qemu
 Platform Features         : medeleg
 Platform HART Count       : 1
 Platform IPI Device       : aclint-mswi
@@ -72,20 +72,20 @@ Platform Timer Device     : aclint-mtimer @ 10000000Hz
 ...
 ```
 
-OpenSBI displays the OpenSBI version, platform name, features, number of HARTs (CPU cores), and more for debugging purposes.
+OpenSBI affiche sa version, le nom de la platforme, les fonctionnalités supportées, le nombre de HARTs (les coeurs CPU), et d'autres informations générales. 
 
-When you press any key, nothing will happen. This is because QEMU's standard input/output is connected to the virtual machine's serial port, and the characters you type are being sent to the OpenSBI. However, no one reads the input characters.
+Le système ne réagit à aucune frappe de touche du clavier. L'interface entrée/sortie de QEMU est connectée à la machine virtuelle, et les caractères du clavier sont envoyés à l'openSBI qui n'en fait rien. D'ailleurs, aucun élément dans l'execution actuelle ne lit l'entrée clavier. 
 
-Press <kbd>Ctrl</kbd>+<kbd>A</kbd> then <kbd>C</kbd> to switch to the QEMU debug console (QEMU monitor). You can exit QEMU by `q` command in the monitor:
+Pressez <kdb>CTRL</kbd>+<kbd>a</kbd> et ensuite <kbd>c</kbd> pour entrer dans la console de surveillance de QEMU. Vous pouvez dés lors quitter QEMY en tappant `q`: 
 
 ```
 QEMU 8.0.2 monitor - type 'help' for more information
 (qemu) q
 ```
 
-> [!TIP]
+> [!ASTUCES]
 >
-> <kbd>Ctrl</kbd>+<kbd>A</kbd> has several features besides switching to the QEMU monitor (<kbd>C</kbd> key). For example, pressing the <kbd>X</kbd> key will immediately exit QEMU.
+> <kbd>Ctrl</kbd>+<kbd>A</kbd> active un ensemble de fonctionnalités de QEMU au delà de l'accès à la console (<kdb>c</kdb>), par exemple presser <kdb>x</kdb> vous fera sortir immédiatement de QEMU.
 >
 > ```
 > C-a h    print this help
@@ -99,6 +99,7 @@ QEMU 8.0.2 monitor - type 'help' for more information
 
 ## Linker script
 
+Le script de lien utiles au programme linker, définie la configuration mémoire des fichiers executables. 
 A linker script is a file which defines the memory layout of executable files. Based on the layout, the linker assigns memory addresses to functions and variables.
 
 Let's create a new file named `kernel.ld`:
